@@ -1,1 +1,4 @@
-
+body { font-family: 'Arial', sans-serif; background: #121212; color: white; text-align: center; }
+.container { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+.sala-card { background: #1e1e1e; padding: 20px; margin: 10px; border-radius: 10px; width: 250px; cursor: pointer; transition: 0.3s; }
+.sala-card:hover { background: #333; }
