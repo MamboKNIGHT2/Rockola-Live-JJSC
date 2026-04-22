@@ -1,0 +1,6 @@
+{
+  "salas": [
+    { "id": "1", "nombre": "Sala de Prueba", "tipo": "publica", "codigo": "" },
+    { "id": "2", "nombre": "Sala Privada", "tipo": "privada", "codigo": "1234" }
+  ]
+}
