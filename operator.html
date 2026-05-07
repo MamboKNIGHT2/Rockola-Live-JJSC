@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Panel del operador — Rockola en Vivo" />
+  <title>🎛️ Panel del Operador — Rockola</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding-bottom: 2rem; }
+    main { padding-top: 1.5rem; }
+
+    /* Fila de item de cola con drag handle */
+    .queue-item {
+      cursor: default;
+    }
+    .queue-item[draggable="true"] {
+      cursor: grab;
+    }
+    .queue-item[draggable="true"]:active {
+      cursor: grabbing;
+    }
+
+    /* Indicador de canción actual en el panel */
+    .queue-item.current-song {
+      border-color: var(--accent-gold);
+      background: linear-gradient(135deg, rgba(244,162,97,0.08) 0%, var(--bg-card) 100%);
+    }
+
+    /* Mensaje de error global */
+    #global-error {
+      position: fixed;
+      top: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      min-width: 280px;
+      max-width: 90vw;
+      text-align: center;
+    }
+
+    .operator-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- ── Header del operador ────────────────────────────────────────────── -->
+  <header class="operator-header" role="banner">
+    <div class="container">
+      <div class="operator-title">
+        <span aria-hidden="true">🎛️</span>
+        Panel del Operador
+      </div>
+      <div class="operator-controls">
+        <!-- Estado de reproducción -->
+        <span id="playback-badge" class="playback-state-badge playing" aria-live="polite" aria-label="Estado de reproducción">
+          ▶️ Reproduciendo
+        </span>
+
+        <!-- Botón Pausar -->
+        <button
+          id="btn-pause"
+          class="btn btn-ghost btn-sm"
+          aria-label="Pausar reproducción"
+          type="button"
+        >
+          ⏸️ Pausar
+        </button>
+
+        <!-- Botón Reanudar (oculto por defecto) -->
+        <button
+          id="btn-resume"
+          class="btn btn-gold btn-sm hidden"
+          aria-label="Reanudar reproducción"
+          type="button"
+        >
+          ▶️ Reanudar
+        </button>
+
+        <!-- Cerrar sesión -->
+        <a
+          href="index.html"
+          class="btn btn-danger btn-sm"
+          aria-label="Cerrar sesión y volver al inicio"
+        >
+          🚪 Salir
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Error global -->
+  <div id="global-error" class="hidden" role="alert" aria-live="assertive"></div>
+
+  <!-- ── Contenido principal ────────────────────────────────────────────── -->
+  <main class="container" id="main-content">
+
+    <!-- Controles de la cola -->
+    <section aria-label="Controles de la cola">
+      <div class="flex items-center justify-between flex-wrap gap-1 mt-2">
+        <p class="section-title">
+          <span aria-hidden="true">📋</span>
+          Cola de canciones
+          <span id="queue-count" class="badge badge-gold" aria-live="polite" aria-label="Canciones en cola">0</span>
+        </p>
+        <button
+          id="btn-skip"
+          class="btn btn-primary btn-sm"
+          aria-label="Saltar canción actual"
+          type="button"
+        >
+          ⏭️ Saltar actual
+        </button>
+      </div>
+
+      <!-- Lista de la cola -->
+      <ul
+        id="queue-list"
+        class="queue-list mt-2"
+        aria-label="Cola de canciones — arrastra para reordenar"
+        aria-live="polite"
+      >
+        <!-- Se rellena dinámicamente -->
+      </ul>
+
+      <!-- Estado vacío -->
+      <div id="queue-empty" class="empty-state hidden" aria-live="polite">
+        <span class="empty-state-icon" aria-hidden="true">🎵</span>
+        <p class="empty-state-title">La cola está vacía</p>
+        <p class="empty-state-sub text-muted">Los clientes pueden pedir canciones desde la pantalla principal.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Scripts ────────────────────────────────────────────────────────── -->
+  <script src="js/jukebox.js"></script>
+  <script>
+    // ── Referencias al DOM ─────────────────────────────────────────────────
+    const queueList = document.getElementById('queue-list');
+    const queueEmpty = document.getElementById('queue-empty');
+    const queueCount = document.getElementById('queue-count');
+    const btnSkip = document.getElementById('btn-skip');
+    const btnPause = document.getElementById('btn-pause');
+    const btnResume = document.getElementById('btn-resume');
+    const playbackBadge = document.getElementById('playback-badge');
+    const globalError = document.getElementById('global-error');
+
+    // ── Estado local ───────────────────────────────────────────────────────
+    let isPaused = false;
+    let dragSrcId = null;
+
+    // ── Renderizar cola ────────────────────────────────────────────────────
+    function renderQueue() {
+      const queue = Jukebox.getQueue();
+      queueCount.textContent = queue.length;
+      btnSkip.disabled = queue.length === 0;
+
+      if (queue.length === 0) {
+        queueList.innerHTML = '';
+        queueEmpty.classList.remove('hidden');
+        return;
+      }
+
+      queueEmpty.classList.add('hidden');
+
+      queueList.innerHTML = queue.map((item, idx) => `
+        <li
+          class="queue-item${idx === 0 ? ' current-song' : ''}"
+          data-id="${escapeHtml(item.id)}"
+          draggable="true"
+          aria-label="${escapeHtml(item.title)}${idx === 0 ? ' — reproduciendo ahora' : ` — posición ${idx + 1}`}"
+        >
+          <span class="drag-handle" aria-hidden="true" title="Arrastrar para reordenar">⠿</span>
+          <span class="queue-position" aria-hidden="true">${idx === 0 ? '▶' : idx + 1}</span>
+          <img
+            class="queue-thumb"
+            src="${escapeHtml(item.thumbnail)}"
+            alt=""
+            width="56" height="42"
+            loading="lazy"
+          />
+          <div class="queue-info">
+            <p class="queue-title">${escapeHtml(item.title)}</p>
+            <p class="queue-meta">${idx === 0 ? '🎤 Reproduciendo ahora' : `⏳ Posición ${idx + 1}`}</p>
+          </div>
+          <div class="queue-actions">
+            ${idx === 0 ? `
+              <button
+                class="btn btn-primary btn-sm"
+                aria-label="Saltar: ${escapeHtml(item.title)}"
+                onclick="skipSong()"
+                type="button"
+              >⏭️ Saltar</button>
+            ` : ''}
+            <button
+              class="btn btn-danger btn-sm"
+              aria-label="Eliminar: ${escapeHtml(item.title)}"
+              onclick="deleteSong('${escapeHtml(item.id)}')"
+              type="button"
+            >🗑️</button>
+          </div>
+        </li>
+      `).join('');
+
+      // Adjuntar eventos de drag & drop
+      attachDragEvents();
+    }
+
+    // ── Drag & Drop ────────────────────────────────────────────────────────
+    function attachDragEvents() {
+      const items = queueList.querySelectorAll('.queue-item[draggable="true"]');
+
+      items.forEach(item => {
+        item.addEventListener('dragstart', onDragStart);
+        item.addEventListener('dragover', onDragOver);
+        item.addEventListener('drop', onDrop);
+        item.addEventListener('dragend', onDragEnd);
+        item.addEventListener('dragleave', onDragLeave);
+      });
+    }
+
+    function onDragStart(e) {
+      dragSrcId = this.dataset.id;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragSrcId);
+    }
+
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+
+    function onDragLeave() {
+      this.classList.remove('drag-over');
+    }
+
+    function onDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      const targetId = this.dataset.id;
+      if (!dragSrcId || dragSrcId === targetId) return;
+
+      const queue = Jukebox.getQueue();
+      const srcIdx = queue.findIndex(i => i.id === dragSrcId);
+      const tgtIdx = queue.findIndex(i => i.id === targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+
+      // Reordenar
+      const newQueue = [...queue];
+      const [moved] = newQueue.splice(srcIdx, 1);
+      newQueue.splice(tgtIdx, 0, moved);
+
+      Jukebox.reorderQueue(newQueue.map(i => i.id));
+      renderQueue();
+    }
+
+    function onDragEnd() {
+      this.classList.remove('dragging');
+      document.querySelectorAll('.queue-item').forEach(el => el.classList.remove('drag-over'));
+      dragSrcId = null;
+    }
+
+    // ── Acciones de la cola ────────────────────────────────────────────────
+    function skipSong() {
+      const queue = Jukebox.getQueue();
+      if (queue.length === 0) {
+        showError('⚠️ La cola está vacía, no hay canción que saltar.');
+        return;
+      }
+      Jukebox.skipCurrent();
+      Jukebox.emitSkip();
+      renderQueue();
+    }
+
+    function deleteSong(id) {
+      Jukebox.removeFromQueue(id);
+      renderQueue();
+    }
+
+    // ── Controles de reproducción ──────────────────────────────────────────
+    function setPaused(paused) {
+      isPaused = paused;
+      if (paused) {
+        btnPause.classList.add('hidden');
+        btnResume.classList.remove('hidden');
+        playbackBadge.textContent = '⏸️ Pausado';
+        playbackBadge.className = 'playback-state-badge paused';
+        Jukebox.emitPause();
+      } else {
+        btnPause.classList.remove('hidden');
+        btnResume.classList.add('hidden');
+        playbackBadge.textContent = '▶️ Reproduciendo';
+        playbackBadge.className = 'playback-state-badge playing';
+        Jukebox.emitResume();
+      }
+    }
+
+    btnPause.addEventListener('click', () => setPaused(true));
+    btnResume.addEventListener('click', () => setPaused(false));
+    btnSkip.addEventListener('click', skipSong);
+
+    // ── Mensajes de error ──────────────────────────────────────────────────
+    function showError(msg) {
+      globalError.innerHTML = `<div class="alert alert-error">${escapeHtml(msg)}</div>`;
+      globalError.classList.remove('hidden');
+      setTimeout(() => globalError.classList.add('hidden'), 4000);
+    }
+
+    // ── Escuchar cambios desde otras pestañas ──────────────────────────────
+    Jukebox.onEvent((e) => {
+      switch (e.type) {
+        case 'queue:updated':
+          renderQueue();
+          break;
+        case 'playback:pause':
+          if (!isPaused) setPaused(true);
+          break;
+        case 'playback:resume':
+          if (isPaused) setPaused(false);
+          break;
+      }
+    });
+
+    // ── Utilidad: escapar HTML ─────────────────────────────────────────────
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // ── Inicializar ────────────────────────────────────────────────────────
+    renderQueue();
+  </script>
+</body>
+</html>

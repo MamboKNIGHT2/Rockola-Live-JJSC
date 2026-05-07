@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pantalla del local — Rockola en Vivo" />
+  <title>📺 Pantalla — Rockola en Vivo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* Asegurar que el body no tenga scroll */
+    html, body {
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+
+    /* Contenedor del reproductor YouTube */
+    #yt-player-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: #000;
+    }
+
+    /* Cuando hay video activo, el container sube sobre los overlays de espera */
+    #yt-player-container.active {
+      z-index: 6;
+    }
+
+    /* El iframe de YouTube ocupa todo */
+    #yt-player {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* El iframe generado por YouTube IFrame API */
+    #yt-player iframe {
+      width: 100% !important;
+      height: 100% !important;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* Overlay "Toca para comenzar" */
+    #touch-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.92);
+      cursor: pointer;
+      transition: opacity 0.5s ease;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    #touch-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #touch-overlay.hidden {
+      display: none;
+    }
+
+    .touch-icon {
+      font-size: clamp(4rem, 12vw, 8rem);
+      margin-bottom: 1.5rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .touch-title {
+      font-size: clamp(1.8rem, 5vw, 3.5rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #f4a261, #e63946);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+
+    .touch-sub {
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-15px) scale(1.05); }
+    }
+
+    /* Pantalla de espera (cola vacía) */
+    #waiting-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #1a0a00 0%, #000 70%);
+      text-align: center;
+      padding: 2rem;
+    }
+
+    #waiting-screen.hidden {
+      display: none;
+    }
+
+    .waiting-icon {
+      font-size: clamp(5rem, 15vw, 10rem);
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 40px rgba(244, 162, 97, 0.5));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .waiting-title {
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #f4a261, #e63946);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+
+    .waiting-sub {
+      font-size: clamp(1rem, 3vw, 1.8rem);
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 2rem;
+    }
+
+    .waiting-url-label {
+      font-size: clamp(0.8rem, 2vw, 1.1rem);
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+
+    .waiting-url {
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(244, 162, 97, 0.4);
+      border-radius: 12px;
+      padding: 1rem 2.5rem;
+      font-size: clamp(1.2rem, 3.5vw, 2rem);
+      font-weight: 700;
+      color: #f4a261;
+      letter-spacing: 0.03em;
+      word-break: break-all;
+      max-width: 90vw;
+    }
+
+    /* Overlay de pausa */
+    #pause-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+    }
+
+    #pause-overlay.hidden {
+      display: none;
+    }
+
+    .pause-icon {
+      font-size: clamp(5rem, 15vw, 10rem);
+      opacity: 0.85;
+      filter: drop-shadow(0 0 30px rgba(244, 162, 97, 0.7));
+      animation: pausePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pausePulse {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.92); }
+    }
+
+    /* Indicador de desconexión */
+    #disconnect-indicator {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 30;
+      background: rgba(230, 57, 70, 0.9);
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: clamp(0.8rem, 2vw, 1rem);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(4px);
+    }
+
+    #disconnect-indicator.hidden {
+      display: none;
+    }
+
+    /* Info de canción actual (esquina inferior) */
+    #now-playing-info {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      z-index: 15;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(244, 162, 97, 0.3);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      max-width: min(500px, 80vw);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    #now-playing-info.hidden {
+      display: none;
+    }
+
+    .np-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #f4a261;
+      color: #1a0a00;
+      font-size: clamp(0.6rem, 1.5vw, 0.75rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .np-pulse {
+      width: 6px;
+      height: 6px;
+      background: #e63946;
+      border-radius: 50%;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    #np-title {
+      font-size: clamp(0.8rem, 2vw, 1rem);
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body class="screen-body">
+
+  <!-- ── Contenedor del reproductor YouTube ─────────────────────────────── -->
+  <div id="yt-player-container" aria-hidden="true">
+    <div id="yt-player"></div>
+  </div>
+
+  <!-- ── Overlay "Toca para comenzar" ───────────────────────────────────── -->
+  <div
+    id="touch-overlay"
+    role="button"
+    tabindex="0"
+    aria-label="Toca para comenzar la reproducción"
+  >
+    <span class="touch-icon" aria-hidden="true">🎸</span>
+    <h1 class="touch-title">Toca para comenzar</h1>
+    <p class="touch-sub">La rockola está lista 🎵</p>
+  </div>
+
+  <!-- ── Pantalla de espera (cola vacía) ────────────────────────────────── -->
+  <div id="waiting-screen" class="hidden" role="region" aria-label="Pantalla de espera">
+    <span class="waiting-icon" aria-hidden="true">🎵</span>
+    <h2 class="waiting-title">¡Pide tu canción!</h2>
+    <p class="waiting-sub">La cola está vacía — sé el primero 🎤</p>
+    <p class="waiting-url-label">Escanea o visita:</p>
+    <div class="waiting-url" id="waiting-url" aria-label="URL para pedir canciones">
+      <!-- Se rellena con la URL actual -->
+    </div>
+  </div>
+
+  <!-- ── Overlay de pausa ────────────────────────────────────────────────── -->
+  <div id="pause-overlay" class="hidden" role="status" aria-label="Reproducción pausada">
+    <span class="pause-icon" aria-hidden="true">⏸️</span>
+  </div>
+
+  <!-- ── Indicador de desconexión ───────────────────────────────────────── -->
+  <div id="disconnect-indicator" class="hidden" role="status" aria-live="polite">
+    <span aria-hidden="true">⚠️</span>
+    Reconectando...
+  </div>
+
+  <!-- ── Info de canción actual ─────────────────────────────────────────── -->
+  <div id="now-playing-info" class="hidden" aria-live="polite" aria-label="Reproduciendo ahora">
+    <span class="np-badge">
+      <span class="np-pulse" aria-hidden="true"></span>
+      Ahora
+    </span>
+    <span id="np-title"></span>
+  </div>
+
+  <!-- ── YouTube IFrame API ─────────────────────────────────────────────── -->
+  <script src="js/jukebox.js"></script>
+  <script>
+    // ── Estado ────────────────────────────────────────────────────────────
+    let ytPlayer    = null;
+    let ytReady     = false;
+    let isPaused    = false;
+    let isWaiting   = true;
+    let overlayGone = false;          // true después de que el usuario tocó
+    let pendingVideoId = null;
+
+    // ── DOM ───────────────────────────────────────────────────────────────
+    const touchOverlay  = document.getElementById('touch-overlay');
+    const waitingScreen = document.getElementById('waiting-screen');
+    const pauseOverlay  = document.getElementById('pause-overlay');
+    const nowPlayingInfo = document.getElementById('now-playing-info');
+    const npTitle       = document.getElementById('np-title');
+    const waitingUrl    = document.getElementById('waiting-url');
+
+    // URL del cliente en pantalla de espera
+    waitingUrl.textContent = window.location.href.replace('screen.html', 'index.html');
+
+    // ── YouTube IFrame API ────────────────────────────────────────────────
+    window.onYouTubeIframeAPIReady = function () {
+      ytReady = true;
+      ytPlayer = new YT.Player('yt-player', {
+        width: '100%',
+        height: '100%',
+        playerVars: {
+          autoplay: 1,          // reproducir automáticamente al cargar video
+          controls: 1,          // mostrar controles (volumen, pausa, etc.)
+          disablekb: 0,
+          fs: 1,
+          rel: 0,
+          playsinline: 1,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          enablejsapi: 1,
+        },
+        events: {
+          onReady: function () {
+            // Si hay un video pendiente (usuario tocó antes de que el player estuviera listo)
+            if (pendingVideoId) {
+              playVideo(pendingVideoId);
+              pendingVideoId = null;
+            }
+          },
+          onStateChange: function (event) {
+            if (event.data === YT.PlayerState.ENDED) {
+              handleVideoEnded();
+            }
+          },
+          onError: function (event) {
+            console.warn('YT error:', event.data);
+            // Video no disponible — saltar al siguiente
+            handleVideoEnded();
+          },
+        },
+      });
+    };
+
+    // ── Reproducir un video ───────────────────────────────────────────────
+    function playVideo(videoId) {
+      if (!ytReady || !ytPlayer || typeof ytPlayer.loadVideoById !== 'function') {
+        pendingVideoId = videoId;
+        return;
+      }
+      // loadVideoById con autoplay:1 reproduce automáticamente
+      ytPlayer.loadVideoById({ videoId: videoId, startSeconds: 0 });
+      showPlayer();
+    }
+
+    function showPlayer() {
+      waitingScreen.classList.add('hidden');
+      nowPlayingInfo.classList.remove('hidden');
+      // Subir el container del player sobre los overlays de espera
+      document.getElementById('yt-player-container').classList.add('active');
+      isWaiting = false;
+    }
+
+    function showWaiting() {
+      waitingScreen.classList.remove('hidden');
+      nowPlayingInfo.classList.add('hidden');
+      // Bajar el container del player
+      document.getElementById('yt-player-container').classList.remove('active');
+      isWaiting = true;
+      if (ytPlayer && typeof ytPlayer.stopVideo === 'function') {
+        ytPlayer.stopVideo();
+      }
+    }
+
+    // ── Avanzar al siguiente video ────────────────────────────────────────
+    function handleVideoEnded() {
+      Jukebox.skipCurrent();
+      Jukebox.emitSkip();
+      const queue = Jukebox.getQueue();
+      if (queue.length > 0) {
+        npTitle.textContent = queue[0].title;
+        playVideo(queue[0].videoId);
+      } else {
+        showWaiting();
+      }
+    }
+
+    // ── Interacción inicial (requerida por política de autoplay) ──────────
+    function handleTouchStart() {
+      overlayGone = true;
+      touchOverlay.classList.add('fade-out');
+      setTimeout(() => touchOverlay.classList.add('hidden'), 500);
+
+      const queue = Jukebox.getQueue();
+      if (queue.length > 0) {
+        npTitle.textContent = queue[0].title;
+        playVideo(queue[0].videoId);
+      } else {
+        showWaiting();
+      }
+    }
+
+    touchOverlay.addEventListener('click', handleTouchStart);
+    touchOverlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTouchStart(); }
+    });
+
+    // ── Eventos desde otras pestañas ──────────────────────────────────────
+    Jukebox.onEvent((e) => {
+      switch (e.type) {
+
+        case 'queue:updated': {
+          const queue = e.queue || Jukebox.getQueue();
+          if (queue.length > 0) {
+            npTitle.textContent = queue[0].title;
+            // Arrancar reproducción automáticamente si el overlay ya fue descartado
+            if (overlayGone && isWaiting) {
+              playVideo(queue[0].videoId);
+            }
+          } else if (overlayGone) {
+            showWaiting();
+          }
+          break;
+        }
+
+        case 'playback:pause': {
+          isPaused = true;
+          pauseOverlay.classList.remove('hidden');
+          if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+            ytPlayer.pauseVideo();
+          }
+          break;
+        }
+
+        case 'playback:resume': {
+          isPaused = false;
+          pauseOverlay.classList.add('hidden');
+          if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+            ytPlayer.playVideo();
+          }
+          break;
+        }
+
+        case 'playback:skip': {
+          const queue = Jukebox.getQueue();
+          if (queue.length > 0) {
+            npTitle.textContent = queue[0].title;
+            playVideo(queue[0].videoId);
+          } else {
+            showWaiting();
+          }
+          break;
+        }
+      }
+    });
+  </script>
+
+  <!-- YouTube IFrame API — debe cargarse DESPUÉS del script principal -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

@@ -5,295 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Rockola en vivo — pide tus canciones favoritas" />
   <title>🎵 Rockola en Vivo</title>
+  <link rel="stylesheet" href="css/styles.css" />
   <style>
-    :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --surface2: #252525;
-      --primary: #ffb300;
-      --primary-hover: #cc8e00;
-      --text: #ffffff;
-      --text-secondary: #aaaaaa;
-      --success: #2ecc71;
-      --error: #e74c3c;
-      --radius: 12px;
-    }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh;
-      padding-bottom: 2rem;
-    }
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-    /* Header */
-    .site-header {
-      background: var(--surface);
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--surface2);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .site-header .container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      color: var(--text);
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-    .logo-icon {
-      font-size: 2rem;
-    }
-    .badge {
-      display: inline-block;
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    .badge-gold {
-      background: var(--primary);
-      color: #000;
-    }
-    .section-title {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    /* Now playing */
-    .now-playing {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      background: var(--surface);
-      padding: 1rem;
-      border-radius: var(--radius);
-      margin-top: 1.5rem;
-    }
-    .now-playing.hidden {
-      display: none;
-    }
-    .now-playing-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: var(--surface2);
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      color: var(--primary);
-    }
-    .pulse {
-      width: 8px;
-      height: 8px;
-      background: var(--primary);
-      border-radius: 50%;
-      display: inline-block;
-      animation: pulse 1.2s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
-    }
-    .now-playing-thumb {
-      width: 80px;
-      height: 60px;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-    .now-playing-info {
-      flex: 1;
-    }
-    .now-playing-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .now-playing-sub {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-    }
-    .empty-state {
-      text-align: center;
-      padding: 2rem;
-      background: var(--surface);
-      border-radius: var(--radius);
-      color: var(--text-secondary);
-    }
-    .empty-state-icon {
-      font-size: 2.5rem;
-    }
-    .empty-state-title {
-      font-size: 1.2rem;
-      margin: 0.5rem 0;
-    }
-    /* Queue */
-    .queue-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      max-height: 400px;
-      overflow-y: auto;
-      padding-right: 0.5rem;
-    }
-    .queue-item {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      background: var(--surface);
-      padding: 0.6rem 0.8rem;
-      border-radius: var(--radius);
-      transition: background 0.2s;
-    }
-    .queue-position {
-      font-weight: bold;
-      color: var(--primary);
-      min-width: 24px;
-    }
-    .queue-thumb {
-      width: 56px;
-      height: 42px;
-      border-radius: 4px;
-      object-fit: cover;
-    }
-    .queue-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .queue-title {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .queue-meta {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-    /* Search */
-    .search-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .form-input {
-      flex: 1;
-      padding: 0.8rem 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--surface2);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 1rem;
-    }
-    .btn {
-      padding: 0.8rem 1.2rem;
-      border-radius: 8px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      transition: background 0.2s;
-    }
-    .btn-gold {
-      background: var(--primary);
-      color: #000;
-    }
-    .btn-gold:hover {
-      background: var(--primary-hover);
-    }
-    .btn-sm {
-      padding: 0.5rem 0.8rem;
-      font-size: 0.85rem;
-    }
-    .alert {
-      padding: 0.8rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-    }
-    .alert-error {
-      background: rgba(231, 76, 60, 0.2);
-      color: #e74c3c;
-    }
-    .hidden {
-      display: none;
-    }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      border: 0;
-    }
-    .results-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .result-item {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      background: var(--surface);
-      padding: 0.6rem;
-      border-radius: var(--radius);
-    }
-    .result-thumb {
-      width: 80px;
-      height: 60px;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-    .result-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .result-title {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    /* Player */
-    #player-wrapper {
-      display: flex;
-      justify-content: center;
-      margin: 1.5rem 0;
-    }
-    #player {
-      width: 100%;
-      max-width: 640px;
-    }
-    /* Toast */
+    body { padding-bottom: 2rem; }
+    main { padding-top: 1.5rem; }
+    .search-section { margin-top: 1.5rem; }
+    #results-section { margin-top: 1rem; }
     #confirm-toast {
       position: fixed;
       bottom: 1.5rem;
@@ -313,24 +30,13 @@
     #confirm-toast.show {
       transform: translateX(-50%) translateY(0);
     }
-    .spinner {
-      display: inline-block;
-      width: 1em;
-      height: 1em;
-      border: 2px solid #000;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      margin-right: 0.5em;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .text-muted { color: var(--text-secondary); }
   </style>
 </head>
 <body>
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header class="site-header" role="banner">
     <div class="container">
-      <a href="#" class="logo" aria-label="Rockola en Vivo — inicio">
+      <a href="index.html" class="logo" aria-label="Rockola en Vivo — inicio">
         <span class="logo-icon" aria-hidden="true">🎸</span>
         <span class="logo-text">Rockola en Vivo</span>
       </a>
@@ -340,6 +46,7 @@
     </div>
   </header>
 
+  <!-- ── Contenido principal ────────────────────────────────────────────── -->
   <main class="container" id="main-content">
 
     <!-- Reproduciendo ahora -->
@@ -356,18 +63,13 @@
             Reproduciendo
           </span>
         </div>
-        <img id="now-playing-thumb" src="" alt="" class="now-playing-thumb" width="80" height="60" />
+        <img id="now-playing-thumb" src="" alt="" class="now-playing-thumb" width="64" height="48" />
         <div class="now-playing-info">
           <p id="now-playing-title" class="now-playing-title"></p>
           <p class="now-playing-sub">🎤 Sonando ahora</p>
         </div>
       </div>
     </section>
-
-    <!-- Reproductor de YouTube -->
-    <div id="player-wrapper">
-      <div id="player"></div>
-    </div>
 
     <!-- Cola de canciones -->
     <section class="queue-section" aria-label="Cola de canciones">
@@ -408,8 +110,10 @@
         </button>
       </div>
 
-      <div id="search-error" class="alert alert-error hidden" role="alert" aria-live="assertive"></div>
+      <!-- Mensajes de error de búsqueda -->
+      <div id="search-error" class="alert alert-error mt-2 hidden" role="alert" aria-live="assertive"></div>
 
+      <!-- Resultados -->
       <div id="results-section" aria-label="Resultados de búsqueda">
         <ul id="results-list" class="results-list" aria-label="Resultados de YouTube"></ul>
       </div>
@@ -417,143 +121,39 @@
 
   </main>
 
+  <!-- Toast de confirmación -->
   <div id="confirm-toast" role="status" aria-live="polite">✅ ¡Canción agregada a la cola!</div>
 
-  <!-- Scripts -->
-  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- ── Scripts ────────────────────────────────────────────────────────── -->
+  <script src="js/jukebox.js"></script>
   <script>
-    // ── Jukebox (manejo de cola y sincronización entre pestañas) ──
-    const CHANNEL_NAME = 'rockola-queue';
-    class Jukebox {
-      constructor() {
-        this.listeners = [];
-        this.channel = new BroadcastChannel(CHANNEL_NAME);
-        this.channel.onmessage = (event) => {
-          if (event.data && event.data.type === 'queue:updated') {
-            this._notifyListeners({ type: 'queue:updated' });
-          }
-        };
-      }
-      getQueue() {
-        const stored = localStorage.getItem('rockola_queue');
-        return stored ? JSON.parse(stored) : [];
-      }
-      _saveQueue(queue) {
-        localStorage.setItem('rockola_queue', JSON.stringify(queue));
-        this.channel.postMessage({ type: 'queue:updated' });
-        this._notifyListeners({ type: 'queue:updated' });
-      }
-      addToQueue(song) {
-        const queue = this.getQueue();
-        // Evitar duplicados consecutivos
-        if (queue.length > 0 && queue[queue.length - 1].videoId === song.videoId) return;
-        const newItem = {
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-          ...song
-        };
-        queue.push(newItem);
-        this._saveQueue(queue);
-      }
-      removeFirst() {
-        const queue = this.getQueue();
-        if (queue.length === 0) return;
-        queue.shift();
-        this._saveQueue(queue);
-      }
-      removeByIndex(index) {
-        const queue = this.getQueue();
-        if (index >= 0 && index < queue.length) {
-          queue.splice(index, 1);
-          this._saveQueue(queue);
-        }
-      }
-      onEvent(callback) {
-        this.listeners.push(callback);
-        return () => {
-          this.listeners = this.listeners.filter(cb => cb !== callback);
-        };
-      }
-      _notifyListeners(event) {
-        this.listeners.forEach(cb => cb(event));
-      }
-    }
-    window.Jukebox = new Jukebox();
-
-    // ── Configuración de YouTube ──────────────────────────────────
-    const YOUTUBE_API_KEY = 'AIzaSyD-NKQi-0Si0dDy8z5-w9F563iAIyi27R0'; // <-- REEMPLAZA CON TU API KEY
+    // ── Configuración ──────────────────────────────────────────────────────
+    // 🔑 El dueño del local pone su API Key aquí una sola vez.
+    // Los clientes no ven ni tocan esto.
+    const YOUTUBE_API_KEY = 'AIzaSyD-NKQi-0Si0dDy8z5-w9F563iAIyi27R0';
     const YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search';
     const MAX_RESULTS = 8;
 
-    // ── Referencias al DOM ─────────────────────────────────────────
+    // ── Referencias al DOM ─────────────────────────────────────────────────
     const searchInput = document.getElementById('search-input');
     const searchBtn = document.getElementById('search-btn');
     const searchError = document.getElementById('search-error');
     const resultsList = document.getElementById('results-list');
     const queueList = document.getElementById('queue-list');
     const queueCount = document.getElementById('queue-count');
+    const nowPlayingSection = document.getElementById('now-playing-section');
     const nowPlayingCard = document.getElementById('now-playing-card');
     const nowPlayingEmpty = document.getElementById('now-playing-empty');
     const nowPlayingThumb = document.getElementById('now-playing-thumb');
     const nowPlayingTitle = document.getElementById('now-playing-title');
     const confirmToast = document.getElementById('confirm-toast');
 
-    let player;
-    let currentVideoId = null;
-
-    // ── Inicializar reproductor de YouTube ────────────────────────
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '360',
-        width: '640',
-        videoId: '',
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          modestbranding: 1,
-          rel: 0,
-          fs: 1
-        },
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
-        }
-      });
-    }
-
-    function onPlayerReady() {
-      updatePlayerFromQueue();
-    }
-
-    function onPlayerStateChange(event) {
-      if (event.data === YT.PlayerState.ENDED) {
-        Jukebox.removeFirst();
-        renderQueue();
-        updatePlayerFromQueue();
-      }
-    }
-
-    function updatePlayerFromQueue() {
-      const queue = Jukebox.getQueue();
-      if (queue.length === 0) {
-        if (player && player.stopVideo) player.stopVideo();
-        currentVideoId = null;
-        return;
-      }
-      const next = queue[0];
-      if (next.videoId !== currentVideoId) {
-        currentVideoId = next.videoId;
-        player.loadVideoById(next.videoId);
-        setTimeout(() => player.playVideo(), 800);
-      } else {
-        if (player.getPlayerState() !== 1) player.playVideo();
-      }
-    }
-
-    // ── Renderizar cola ───────────────────────────────────────────
+    // ── Renderizar cola ────────────────────────────────────────────────────
     function renderQueue() {
       const queue = Jukebox.getQueue();
       queueCount.textContent = queue.length;
 
+      // "Reproduciendo ahora" = primer elemento
       if (queue.length > 0) {
         const current = queue[0];
         nowPlayingCard.classList.remove('hidden');
@@ -564,9 +164,9 @@
       } else {
         nowPlayingCard.classList.add('hidden');
         nowPlayingEmpty.classList.remove('hidden');
-        if (player && player.stopVideo) player.stopVideo();
       }
 
+      // Lista de espera (sin el primero)
       const waiting = queue.slice(1);
       if (waiting.length === 0) {
         queueList.innerHTML = '';
@@ -576,7 +176,13 @@
       queueList.innerHTML = waiting.map((item, idx) => `
         <li class="queue-item" data-id="${escapeHtml(item.id)}">
           <span class="queue-position" aria-label="Posición ${idx + 2}">${idx + 2}</span>
-          <img class="queue-thumb" src="${escapeHtml(item.thumbnail)}" alt="" width="56" height="42" loading="lazy" />
+          <img
+            class="queue-thumb"
+            src="${escapeHtml(item.thumbnail)}"
+            alt=""
+            width="56" height="42"
+            loading="lazy"
+          />
           <div class="queue-info">
             <p class="queue-title">${escapeHtml(item.title)}</p>
             <p class="queue-meta">⏳ En espera</p>
@@ -585,12 +191,13 @@
       `).join('');
     }
 
-    // ── Búsqueda en YouTube ───────────────────────────────────────
+    // ── Búsqueda en YouTube ────────────────────────────────────────────────
     async function searchYouTube(query) {
-      if (YOUTUBE_API_KEY === 'AIzaSyD-NKQi-0Si0dDy8z5-w9F563iAIyi27R0') {
-        showSearchError('⚠️ Configura tu API Key de YouTube.');
+      if (YOUTUBE_API_KEY === 'TU_API_KEY_AQUI') {
+        showSearchError('⚠️ Configura tu API Key de YouTube en el archivo index.html para habilitar la búsqueda.');
         return;
       }
+
       searchBtn.disabled = true;
       searchBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Buscando...';
       hideSearchError();
@@ -605,23 +212,35 @@
           maxResults: MAX_RESULTS,
           key: YOUTUBE_API_KEY,
         });
+
         const res = await fetch(`${YOUTUBE_SEARCH_URL}?${params}`);
+
         if (!res.ok) {
           if (res.status === 403) {
-            showSearchError('❌ Cuota agotada o API Key inválida.');
+            showSearchError('❌ Cuota de YouTube agotada o API Key inválida. Intenta más tarde.');
           } else {
-            showSearchError(`❌ Error al buscar (${res.status}).`);
+            showSearchError(`❌ Error al buscar (${res.status}). Intenta de nuevo.`);
           }
           return;
         }
+
         const data = await res.json();
+
         if (!data.items || data.items.length === 0) {
-          resultsList.innerHTML = `<li class="empty-state"><span class="empty-state-icon">🔇</span><p class="empty-state-title">Sin resultados</p><p class="empty-state-sub text-muted">No encontramos nada para "${escapeHtml(query)}"</p></li>`;
+          resultsList.innerHTML = `
+            <li class="empty-state">
+              <span class="empty-state-icon" aria-hidden="true">🔇</span>
+              <p class="empty-state-title">Sin resultados</p>
+              <p class="empty-state-sub text-muted">No encontramos nada para "${escapeHtml(query)}"</p>
+            </li>
+          `;
           return;
         }
+
         renderResults(data.items);
+
       } catch (err) {
-        showSearchError('❌ Error de conexión. Verifica tu internet.');
+        showSearchError('❌ Error de conexión. Verifica tu internet e intenta de nuevo.');
       } finally {
         searchBtn.disabled = false;
         searchBtn.innerHTML = '<span aria-hidden="true">🔍</span> Buscar';
@@ -635,25 +254,43 @@
         const thumb = item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url || '';
         return `
           <li class="result-item">
-            <img class="result-thumb" src="${escapeHtml(thumb)}" alt="" width="80" height="60" loading="lazy" />
+            <img
+              class="result-thumb"
+              src="${escapeHtml(thumb)}"
+              alt=""
+              width="80" height="60"
+              loading="lazy"
+            />
             <div class="result-info">
               <p class="result-title">${escapeHtml(title)}</p>
             </div>
-            <button class="btn btn-gold btn-sm" data-video-id="${escapeHtml(videoId)}" data-title="${escapeHtml(title)}" data-thumb="${escapeHtml(thumb)}" onclick="addSong(this)">🎵 Pedir</button>
+            <button
+              class="btn btn-gold btn-sm"
+              aria-label="Pedir: ${escapeHtml(title)}"
+              data-video-id="${escapeHtml(videoId)}"
+              data-title="${escapeHtml(title)}"
+              data-thumb="${escapeHtml(thumb)}"
+              onclick="addSong(this)"
+              type="button"
+            >
+              🎵 Pedir
+            </button>
           </li>
         `;
       }).join('');
     }
 
-    // ── Agregar canción a la cola ────────────────────────────────
+    // ── Agregar canción a la cola ──────────────────────────────────────────
     function addSong(btn) {
       const videoId = btn.dataset.videoId;
       const title = btn.dataset.title;
       const thumbnail = btn.dataset.thumb;
+
       Jukebox.addToQueue({ videoId, title, thumbnail });
       renderQueue();
-      updatePlayerFromQueue();
       showToast();
+
+      // Feedback visual en el botón
       btn.disabled = true;
       btn.textContent = '✅ Pedida';
       setTimeout(() => {
@@ -662,34 +299,34 @@
       }, 3000);
     }
 
-    // ── Toast ─────────────────────────────────────────────────────
+    // ── Toast de confirmación ──────────────────────────────────────────────
     function showToast() {
       confirmToast.classList.add('show');
       setTimeout(() => confirmToast.classList.remove('show'), 2500);
     }
 
-    // ── Mensajes de error ────────────────────────────────────────
+    // ── Mensajes de error ──────────────────────────────────────────────────
     function showSearchError(msg) {
       searchError.textContent = msg;
       searchError.classList.remove('hidden');
     }
+
     function hideSearchError() {
       searchError.classList.add('hidden');
     }
 
-    // ── Escuchar cambios de la cola (incluso desde otras pestañas) ──
+    // ── Escuchar cambios de la cola desde otras pestañas ───────────────────
     Jukebox.onEvent((e) => {
       if (e.type === 'queue:updated') {
         renderQueue();
-        updatePlayerFromQueue();
       }
     });
 
-    // ── Eventos de búsqueda ──────────────────────────────────────
+    // ── Eventos de búsqueda ────────────────────────────────────────────────
     searchBtn.addEventListener('click', () => {
       const q = searchInput.value.trim();
       if (q.length < 2) {
-        showSearchError('⚠️ Escribe al menos 2 caracteres.');
+        showSearchError('⚠️ Escribe al menos 2 caracteres para buscar.');
         return;
       }
       searchYouTube(q);
@@ -699,7 +336,7 @@
       if (e.key === 'Enter') {
         const q = searchInput.value.trim();
         if (q.length < 2) {
-          showSearchError('⚠️ Escribe al menos 2 caracteres.');
+          showSearchError('⚠️ Escribe al menos 2 caracteres para buscar.');
           return;
         }
         searchYouTube(q);
@@ -713,7 +350,7 @@
       }
     });
 
-    // ── Utilidad de escape HTML ──────────────────────────────────
+    // ── Utilidad: escapar HTML ─────────────────────────────────────────────
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -723,7 +360,7 @@
         .replace(/'/g, '&#39;');
     }
 
-    // Inicializar interfaz
+    // ── Inicializar ────────────────────────────────────────────────────────
     renderQueue();
   </script>
 </body>
