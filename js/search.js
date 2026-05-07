@@ -17,6 +17,7 @@ async function searchYouTube(query) {
             const author = entry.querySelector('author name')?.textContent;
             const mediaGroup = entry.querySelector('media\\:group, group');
             const thumbnail = mediaGroup?.querySelector('media\\:thumbnail, thumbnail')?.getAttribute('url');
+            const YOUTUBE_API_KEY = 'AIzaSyD-NKQi-0Si0dDy8z5-w9F563iAIyi27R0';
             
             if (videoId && title) {
                 results.push({ videoId, title, channel: author || 'YouTube', thumbnail });
