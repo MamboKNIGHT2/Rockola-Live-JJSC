@@ -195,8 +195,11 @@ function addToPlaylist(videoObj) {
     newList.push(videoObj);
     roomRef.child('playlist').set(newList);
     // Si no hay video reproduciéndose y es admin, empezar
-    if (!currentVideoId && isAdmin) {
-        playVideoFromPlaylist(0);
+    if (isAdmin) {
+        const currentVideoSnap = await roomRef.child('currentVideo').once('value');
+        if (!currentVideoSnap.val()) {
+            playVideoFromPlaylist(0);
+        }
     }
 }
 
