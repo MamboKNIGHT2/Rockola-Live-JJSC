@@ -1,1 +1,32 @@
-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Party - Unirse</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 YouTube Party</h1>
+        <div class="card">
+            <h2>Unirse a una sala</h2>
+            <input type="text" id="roomId" placeholder="ID de la sala (ej: fiesta123)" autocomplete="off">
+            <input type="text" id="userName" placeholder="Tu nombre" autocomplete="off">
+            <button id="joinBtn">Entrar a la sala</button>
+            <p class="hint">Si la sala no existe, se creará y serás el Admin.</p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('joinBtn').addEventListener('click', () => {
+            const roomId = document.getElementById('roomId').value.trim();
+            const userName = document.getElementById('userName').value.trim();
+            if (!roomId || !userName) return alert('Completa todos los campos');
+            // Guardar en sessionStorage para usar en room.html
+            sessionStorage.setItem('roomId', roomId);
+            sessionStorage.setItem('userName', userName);
+            window.location.href = 'room.html';
+        });
+    </script>
+</body>
+</html>
