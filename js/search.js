@@ -1,29 +1,24 @@
-// Búsqueda usando el feed RSS público de YouTube + proxy CORS gratuito
+// Búsqueda usando YouTube Data API v3 (requiere clave de API gratuita)
+const YOUTUBE_API_KEY = 'AIzaSy...TU_CLAVE'; // ← CAMBIA ESTO
+
 async function searchYouTube(query) {
-    const proxy = 'https://api.allorigins.win/raw?url=';
-    const feedUrl = `https://www.youtube.com/feeds/videos.xml?q=${encodeURIComponent(query)}`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}`;
     
     try {
-        const response = await fetch(proxy + encodeURIComponent(feedUrl));
-        const text = await response.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
-        const entries = xml.querySelectorAll('entry');
+        const response = await fetch(url);
+        const data = await response.json();
         
-        const results = [];
-        entries.forEach(entry => {
-            const videoId = entry.querySelector('yt\\:videoId, videoId')?.textContent;
-            const title = entry.querySelector('title')?.textContent;
-            const author = entry.querySelector('author name')?.textContent;
-            const mediaGroup = entry.querySelector('media\\:group, group');
-            const thumbnail = mediaGroup?.querySelector('media\\:thumbnail, thumbnail')?.getAttribute('url');
-            const YOUTUBE_API_KEY = 'AIzaSyD-NKQi-0Si0dDy8z5-w9F563iAIyi27R0';
-            
-            if (videoId && title) {
-                results.push({ videoId, title, channel: author || 'YouTube', thumbnail });
-            }
-        });
-        return results.slice(0, 12);
+        if (data.error) {
+            console.error('Error de API:', data.error);
+            return [];
+        }
+        
+        return data.items.map(item => ({
+            videoId: item.id.videoId,
+            title: item.snippet.title,
+            channel: item.snippet.channelTitle,
+            thumbnail: item.snippet.thumbnails.default.url
+        }));
     } catch (err) {
         console.error('Error en búsqueda:', err);
         return [];
